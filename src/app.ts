@@ -11,7 +11,6 @@ dotenv.config();
 
 const app: Application = express();
 
-// ==================== Middlewares globales ====================
 app.use(helmet());
 app.use(
   cors({
@@ -25,7 +24,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(rateLimitMiddleware);
 
-// ==================== Health Check ====================
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
@@ -38,7 +36,6 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// ==================== AUTH-USER SERVICE ====================
 const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
 
 [
@@ -61,7 +58,6 @@ const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
   app.all(route, (req, res) => proxyRequest(req, res, AUTH_USER_URL));
 });
 
-// ==================== STATES SERVICE ====================
 const STATES_URL = process.env.STATES_SERVICE_URL!;
 
 app.all('/api/v1/states*', async (req: Request, res: Response) => {
@@ -84,13 +80,11 @@ app.all('/api/v1/states*', async (req: Request, res: Response) => {
       validateStatus: () => true,
     };
 
-    // ✅ Borrar con Reflect para evitar errores de TS
     Reflect.deleteProperty(config.headers!, 'host');
     Reflect.deleteProperty(config.headers!, 'content-length');
 
     const response = await axios(config);
 
-    // Propagar los encabezados al cliente
     Object.entries(response.headers).forEach(([key, value]) => {
       if (value) res.setHeader(key, value as string);
     });
@@ -106,7 +100,6 @@ app.all('/api/v1/states*', async (req: Request, res: Response) => {
   }
 });
 
-// ==================== 404 Handler ====================
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
@@ -116,7 +109,6 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// ==================== Error Handler ====================
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', err);
   res.status(500).json({
