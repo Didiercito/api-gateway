@@ -4,25 +4,28 @@ import { Request, Response } from 'express';
 export const proxyRequest = async (
   req: Request,
   res: Response,
-  targetUrl: string
+  targetUrl: string,
+  customPath?: string
 ): Promise<void> => {
   try {
-    console.log(`[PROXY] ${req.method} ${req.originalUrl} → ${targetUrl}${req.originalUrl}`);
+    const path = customPath !== undefined ? customPath : req.path;
+
+    console.log(`[PROXY] ${req.method} ${req.originalUrl} → ${targetUrl}${path}`);
 
     const config: AxiosRequestConfig = {
       method: req.method as any,
-      url: `${targetUrl}${req.originalUrl}`,
+      url: `${targetUrl}${path}`,
+      params: req.query,
       headers: {
         ...req.headers,
-        host: new URL(targetUrl).host
+        host: new URL(targetUrl).host,
+        'x-forwarded-for': req.ip,
       },
       data: req.body,
-      params: req.query,
       timeout: 30000,
-      validateStatus: () => true
+      validateStatus: () => true,
     };
 
-    // ✅ protección contra headers undefined
     if (config.headers) {
       delete (config.headers as any)['host'];
       delete (config.headers as any)['content-length'];
@@ -40,7 +43,7 @@ export const proxyRequest = async (
     res.status(503).json({
       success: false,
       message: 'Service unavailable',
-      error: error.message
+      error: error.message,
     });
   }
 };

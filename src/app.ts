@@ -2,7 +2,6 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import axios, { AxiosRequestConfig } from 'axios';
 import dotenv from 'dotenv';
 import { rateLimitMiddleware } from './middleware/rate-limit.middleware';
 import { proxyRequest } from './utils/proxy.helper';
@@ -28,17 +27,18 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: 'API Gateway is running',
+    environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
     services: {
-      authUser: process.env.AUTH_USER_SERVICE_URL,
-      states: process.env.STATES_SERVICE_URL,
+      authUser: process.env.AUTH_USER_SERVICE_URL ? 'OK' : 'Not Set',
+      states: process.env.STATES_SERVICE_URL ? 'OK' : 'Not Set',
+      notifications: process.env.NOTIFICATIONS_SERVICE_URL ? 'OK' : 'Not Set',
     },
   });
 });
 
 const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
-
-[
+const authUserRoutes = [
   '/api/v1/auth/*',
   '/api/v1/password/*',
   '/api/v1/permission/*',
@@ -54,63 +54,37 @@ const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
   '/api/schedules',
   '/api/reputation/*',
   '/api/reputation',
-].forEach((route) => {
+];
+
+authUserRoutes.forEach((route) => {
   app.all(route, (req, res) => proxyRequest(req, res, AUTH_USER_URL));
 });
 
 const STATES_URL = process.env.STATES_SERVICE_URL!;
 
 app.all('/api/v1/states*', async (req: Request, res: Response) => {
-  const originalUrl = req.originalUrl;
-  const newPath = originalUrl.replace('/api/v1/states', '/api/states');
+  const newPath = req.path.replace('/api/v1/states', '/api/states');
+  proxyRequest(req, res, STATES_URL, newPath);
+});
 
-  console.log(`[PROXY STATES] ${req.method} ${originalUrl} → ${STATES_URL}${newPath}`);
+const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL!;
 
-  try {
-    const config: AxiosRequestConfig = {
-      method: req.method as any,
-      url: `${STATES_URL}${newPath}`,
-      headers: {
-        ...(req.headers as Record<string, any>),
-        host: new URL(STATES_URL).host,
-      },
-      data: req.body,
-      params: req.query,
-      timeout: 30000,
-      validateStatus: () => true,
-    };
-
-    Reflect.deleteProperty(config.headers!, 'host');
-    Reflect.deleteProperty(config.headers!, 'content-length');
-
-    const response = await axios(config);
-
-    Object.entries(response.headers).forEach(([key, value]) => {
-      if (value) res.setHeader(key, value as string);
-    });
-
-    res.status(response.status).json(response.data);
-  } catch (error: any) {
-    console.error('[PROXY STATES ERROR]', error.message);
-    res.status(503).json({
-      success: false,
-      message: 'States service unavailable',
-      error: error.message,
-    });
-  }
+app.all('/api/v1/notifications*', async (req: Request, res: Response) => {
+  const newPath = req.path.replace('/api/v1/notifications', '/api/notifications');
+  proxyRequest(req, res, NOTIFICATIONS_URL, newPath);
 });
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found',
+    message: 'Route not found on API Gateway',
     path: req.originalUrl,
     method: req.method,
   });
 });
 
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-  console.error('Error:', err);
+  console.error('Internal Server Error:', err);
   res.status(500).json({
     success: false,
     message: 'Internal server error',
