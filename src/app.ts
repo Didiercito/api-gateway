@@ -9,14 +9,8 @@ import { proxyRequest } from './utils/proxy.helper';
 dotenv.config();
 
 const app: Application = express();
-// Middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
-    credentials: true,
-  })
-);
+app.use(cors({ origin: '*' }));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
