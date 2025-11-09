@@ -44,6 +44,7 @@ const authUserRoutes = [
   '/api/v1/permission/*',
   '/api/v1/role/*',
   '/api/v1/verification/*',
+  
   '/api/v1/users/*',
   '/api/v1/users',
   '/api/v1/skills/*',
@@ -83,7 +84,7 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Internal Server Error:', err);
   res.status(500).json({
     success: false,
