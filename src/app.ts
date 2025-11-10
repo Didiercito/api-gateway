@@ -10,7 +10,8 @@ dotenv.config();
 
 const app: Application = express();
 app.use(helmet());
-app.use(cors());
+app.use(cors({origin: '*'}));
+app.set('trust proxy', 1);
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
