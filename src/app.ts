@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(rateLimitMiddleware);
 
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: 'API Gateway is running',
