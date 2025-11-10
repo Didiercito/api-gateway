@@ -10,14 +10,12 @@ dotenv.config();
 
 const app: Application = express();
 app.use(helmet());
-app.use(cors({origin: '*'}));
 app.set('trust proxy', 1);
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(rateLimitMiddleware);
-
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
@@ -31,7 +29,6 @@ app.get('/health', (_req: Request, res: Response) => {
     },
   });
 });
-
 const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
 const authUserRoutes = [
   '/api/v1/auth/*',
@@ -51,25 +48,21 @@ const authUserRoutes = [
   '/api/v1/reputation/*',
   '/api/v1/reputation',
 ];
-
 authUserRoutes.forEach((route) => {
   app.all(route, (req, res) => proxyRequest(req, res, AUTH_USER_URL));
 });
 
 const STATES_URL = process.env.STATES_SERVICE_URL!;
-
 app.all('/api/v1/states*', async (req: Request, res: Response) => {
   const newPath = req.path.replace('/api/v1/states', '/api/states');
   proxyRequest(req, res, STATES_URL, newPath);
 });
-
 const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL!;
 
 app.all('/api/v1/notifications*', async (req: Request, res: Response) => {
   const newPath = req.path.replace('/api/v1/notifications', '/api/notifications');
   proxyRequest(req, res, NOTIFICATIONS_URL, newPath);
 });
-
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
@@ -78,7 +71,6 @@ app.use((req: Request, res: Response) => {
     method: req.method,
   });
 });
-
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Internal Server Error:', err);
   res.status(500).json({
@@ -87,5 +79,4 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     error: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
-
 export default app;
