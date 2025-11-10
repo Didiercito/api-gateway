@@ -32,9 +32,19 @@ export const proxyRequest = async (
     }
 
     const response = await axios(config);
+    
+    // CORRECCIÓN 1: Limpieza de Content-Length/Transfer-Encoding
+    if (response.headers) {
+        delete response.headers['content-length'];
+        delete response.headers['transfer-encoding'];
+    }
 
+    // CORRECCIÓN 2: Ignorar encabezados CORS del servicio Upstream
     Object.keys(response.headers).forEach(key => {
-      res.setHeader(key, response.headers[key]);
+      // Si el nombre de la clave es Access-Control-Allow-Origin, NO la copiamos.
+      if (key.toLowerCase() !== 'access-control-allow-origin') {
+        res.setHeader(key, response.headers[key]);
+      }
     });
 
     res.status(response.status).json(response.data);

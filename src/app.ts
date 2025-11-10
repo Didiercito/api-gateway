@@ -1,5 +1,4 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
@@ -29,6 +28,7 @@ app.get('/health', (_req: Request, res: Response) => {
     },
   });
 });
+
 const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
 const authUserRoutes = [
   '/api/v1/auth/*',
