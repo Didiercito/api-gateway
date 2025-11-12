@@ -32,6 +32,15 @@ app.get('/health', (_req: Request, res: Response) => {
 
 const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
 
+// IMPORTANTE: Esta ruta específica debe ir ANTES de las rutas genéricas
+app.all('/api/v1/users/me/availability*', (req: Request, res: Response) => {
+  const original = req.url;
+  const newPath = original.replace('/api/v1/users/me/availability', '/api/v1/availability/me');
+  console.log(`[PROXY][AVAILABILITY] ${req.method} ${original} → ${AUTH_USER_URL}${newPath}`);
+  proxyRequest(req, res, AUTH_USER_URL, newPath);
+});
+
+// Rutas genéricas vienen DESPUÉS
 const authUserRoutes = [
   '/api/v1/auth/*',
   '/api/v1/password/*',
