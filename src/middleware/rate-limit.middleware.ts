@@ -8,5 +8,3 @@ export const rateLimitMiddleware = rateLimit({
     message: 'Too many requests, please try again later'
   }
 });
-
-// You can adjust the windowMs and max values as needed
