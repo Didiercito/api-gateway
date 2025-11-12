@@ -37,7 +37,6 @@ const authUserRoutes = [
   '/api/v1/permission/*',
   '/api/v1/role/*',
   '/api/v1/verification/*',
-  
   '/api/v1/users/*',
   '/api/v1/users',
   '/api/v1/skills/*',
@@ -57,7 +56,7 @@ authUserRoutes.forEach((route) => {
 app.all('/api/v1/users/me/availability*', (req: Request, res: Response) => {
   const newPath = req.originalUrl.replace('/api/v1/users/me/availability', '/api/v1/availability/me');
   console.log(`[PROXY][AVAILABILITY] ${req.method} ${req.originalUrl} → ${AUTH_USER_URL}${newPath}`);
-  proxyRequest(req, res, AUTH_USER_URL + newPath);
+  proxyRequest(req, res, AUTH_USER_URL, newPath);
 });
 
 const STATES_URL = process.env.STATES_SERVICE_URL!;

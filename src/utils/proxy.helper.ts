@@ -8,13 +8,13 @@ export const proxyRequest = async (
   customPath?: string
 ): Promise<void> => {
   try {
-    const path = customPath !== undefined ? customPath : req.path;
-
-    console.log(`[PROXY] ${req.method} ${req.originalUrl} → ${targetUrl}${path}`);
+    const finalPath = customPath ?? req.originalUrl;
+    const finalUrl = `${targetUrl}${finalPath}`;
+    console.log(`[PROXY] ${req.method} ${req.originalUrl} → ${finalUrl}`);
 
     const config: AxiosRequestConfig = {
       method: req.method as any,
-      url: `${targetUrl}${path}`,
+      url: finalUrl,
       params: req.query,
       headers: {
         ...req.headers,
@@ -32,16 +32,13 @@ export const proxyRequest = async (
     }
 
     const response = await axios(config);
-    
-    // CORRECCIÓN 1: Limpieza de Content-Length/Transfer-Encoding
+
     if (response.headers) {
-        delete response.headers['content-length'];
-        delete response.headers['transfer-encoding'];
+      delete response.headers['content-length'];
+      delete response.headers['transfer-encoding'];
     }
 
-    // CORRECCIÓN 2: Ignorar encabezados CORS del servicio Upstream
-    Object.keys(response.headers).forEach(key => {
-      // Si el nombre de la clave es Access-Control-Allow-Origin, NO la copiamos.
+    Object.keys(response.headers).forEach((key) => {
       if (key.toLowerCase() !== 'access-control-allow-origin') {
         res.setHeader(key, response.headers[key]);
       }
