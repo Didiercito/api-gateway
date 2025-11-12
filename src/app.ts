@@ -52,6 +52,12 @@ authUserRoutes.forEach((route) => {
   app.all(route, (req, res) => proxyRequest(req, res, AUTH_USER_URL));
 });
 
+app.all('/api/v1/users/me/availability/*', (req: Request, res: Response) => {
+  const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
+  const newPath = req.path.replace('/api/v1/users/me/availability', '/api/v1/availability/me');
+  proxyRequest(req, res, AUTH_USER_URL, newPath);
+});
+
 const STATES_URL = process.env.STATES_SERVICE_URL!;
 app.all('/api/v1/states*', async (req: Request, res: Response) => {
   const newPath = req.path.replace('/api/v1/states', '/api/states');
