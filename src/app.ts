@@ -8,13 +8,14 @@ import { proxyRequest } from './utils/proxy.helper';
 dotenv.config();
 
 const app: Application = express();
+
 app.use(helmet());
 app.set('trust proxy', 1);
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(rateLimitMiddleware);
+
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
@@ -25,6 +26,7 @@ app.get('/health', (_req: Request, res: Response) => {
       authUser: process.env.AUTH_USER_SERVICE_URL ? 'OK' : 'Not Set',
       states: process.env.STATES_SERVICE_URL ? 'OK' : 'Not Set',
       notifications: process.env.NOTIFICATIONS_SERVICE_URL ? 'OK' : 'Not Set',
+      kitchen: process.env.KITCHEN_SERVICE_URL ? 'OK' : 'Not Set',
     },
   });
 });
@@ -36,7 +38,6 @@ const authUserRoutes = [
   '/api/v1/permission/*',
   '/api/v1/role/*',
   '/api/v1/verification/*',
-  
   '/api/v1/users/*',
   '/api/v1/users',
   '/api/v1/skills/*',
@@ -48,27 +49,36 @@ const authUserRoutes = [
   '/api/v1/reputation/*',
   '/api/v1/reputation',
 ];
+
 authUserRoutes.forEach((route) => {
   app.all(route, (req, res) => proxyRequest(req, res, AUTH_USER_URL));
 });
 
 app.all('/api/v1/users/me/availability/*', (req: Request, res: Response) => {
-  const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
+  const newPath = req.path.replace('/api/v1/users/me/availability', '/api/v1/availability/me');
+  proxyRequest(req, res, AUTH_USER_URL, newPath);
+});
+app.all('/api/v1/users/me/availability', (req: Request, res: Response) => {
   const newPath = req.path.replace('/api/v1/users/me/availability', '/api/v1/availability/me');
   proxyRequest(req, res, AUTH_USER_URL, newPath);
 });
 
 const STATES_URL = process.env.STATES_SERVICE_URL!;
-app.all('/api/v1/states*', async (req: Request, res: Response) => {
-  const newPath = req.path.replace('/api/v1/states', '/api/states');
-  proxyRequest(req, res, STATES_URL, newPath);
+app.all('/api/v1/states*', (req: Request, res: Response) => {
+  proxyRequest(req, res, STATES_URL);
 });
-const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL!;
 
-app.all('/api/v1/notifications*', async (req: Request, res: Response) => {
-  const newPath = req.path.replace('/api/v1/notifications', '/api/notifications');
-  proxyRequest(req, res, NOTIFICATIONS_URL, newPath);
+const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL!;
+app.all('/api/v1/notifications*', (req: Request, res: Response) => {
+  proxyRequest(req, res, NOTIFICATIONS_URL);
 });
+
+const KITCHEN_URL = process.env.KITCHEN_SERVICE_URL!;
+app.all('/api/v1/kitchens*', (req: Request, res: Response) => {
+  proxyRequest(req, res, KITCHEN_URL);
+});
+
+
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
@@ -77,6 +87,7 @@ app.use((req: Request, res: Response) => {
     method: req.method,
   });
 });
+
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Internal Server Error:', err);
   res.status(500).json({
@@ -85,4 +96,5 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     error: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
+
 export default app;
