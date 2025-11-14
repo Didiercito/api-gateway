@@ -1,94 +1,66 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import dotenv from 'dotenv';
-import { rateLimitMiddleware } from './middleware/rate-limit.middleware';
-import { proxyRequest } from './utils/proxy.helper';
-
+import express, { Application, Request, Response } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import dotenv from "dotenv";
 dotenv.config();
 
+import { proxyRequest } from "./utils/proxy.helper";
+import { rateLimitMiddleware } from "./middleware/rate-limit.middleware";
+import { resolveUserLocation } from "./middleware/resolve-location.middleware";
+
 const app: Application = express();
+
 app.use(helmet());
-app.set('trust proxy', 1);
-app.use(morgan('dev'));
+app.use(cors({ origin: "*", credentials: true }));
+app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(rateLimitMiddleware);
 
-app.get('/health', (_req: Request, res: Response) => {
+// ====================== SERVICES URL ======================
+const AUTH = process.env.AUTH_USER_SERVICE_URL!;
+const STATES = process.env.STATES_SERVICE_URL!;
+const KITCHENS = process.env.KITCHEN_SERVICE_URL!;
+const NOTIFICATIONS = process.env.NOTIFICATIONS_SERVICE_URL!;
+
+// ====================== HEALTH ======================
+app.get("/health", (_req, res) => {
   res.status(200).json({
     success: true,
-    message: 'API Gateway is running',
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-    services: {
-      authUser: process.env.AUTH_USER_SERVICE_URL ? 'OK' : 'Not Set',
-      states: process.env.STATES_SERVICE_URL ? 'OK' : 'Not Set',
-      notifications: process.env.NOTIFICATIONS_SERVICE_URL ? 'OK' : 'Not Set',
-    },
+    message: "API Gateway OK",
+    timestamp: new Date(),
+    services: { AUTH, STATES, KITCHENS, NOTIFICATIONS }
   });
 });
 
-const AUTH_USER_URL = process.env.AUTH_USER_SERVICE_URL!;
-
-app.all('/api/v1/users/me/availability*', (req: Request, res: Response) => {
-  const original = req.url;
-  const newPath = original.replace('/api/v1/users/me/availability', '/api/v1/availability/me');
-  console.log(`[PROXY][AVAILABILITY] ${req.method} ${original} → ${AUTH_USER_URL}${newPath}`);
-  proxyRequest(req, res, AUTH_USER_URL, newPath);
+// ====================== AUTH SERVICE ======================
+app.all("/api/v1/auth/*", (req, res) => {
+  proxyRequest(req, res, AUTH);
 });
 
-const authUserRoutes = [
-  '/api/v1/auth/*',
-  '/api/v1/password/*',
-  '/api/v1/permission/*',
-  '/api/v1/role/*',
-  '/api/v1/verification/*',
-  '/api/v1/users/*',
-  '/api/v1/users',
-  '/api/v1/skills/*',
-  '/api/v1/skills',
-  '/api/v1/availability/*',
-  '/api/v1/availability',
-  '/api/v1/schedules/*',
-  '/api/v1/schedules',
-  '/api/v1/reputation/*',
-  '/api/v1/reputation',
-];
-
-authUserRoutes.forEach((route) => {
-  app.all(route, (req, res) => proxyRequest(req, res, AUTH_USER_URL));
+app.all("/api/v1/users/*", (req, res) => {
+  proxyRequest(req, res, AUTH);
 });
 
-const STATES_URL = process.env.STATES_SERVICE_URL!;
-app.all('/api/v1/states*', (req: Request, res: Response) => {
-  const newPath = req.path.replace('/api/v1/states', '/api/states');
-  proxyRequest(req, res, STATES_URL, newPath);
+// ====================== STATES ======================
+app.all("/api/v1/states/*", (req, res) => {
+  proxyRequest(req, res, STATES);
 });
 
-const NOTIFICATIONS_URL = process.env.NOTIFICATIONS_SERVICE_URL!;
-app.all('/api/v1/notifications*', (req: Request, res: Response) => {
-  const newPath = req.path.replace('/api/v1/notifications', '/api/notifications');
-  proxyRequest(req, res, NOTIFICATIONS_URL, newPath);
+// ====================== NOTIFICATIONS ======================
+app.all("/api/v1/notifications/*", (req, res) => {
+  proxyRequest(req, res, NOTIFICATIONS);
 });
 
-app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found on API Gateway',
-    path: req.originalUrl,
-    method: req.method,
-  });
+// ====================== KITCHENS ======================
+app.get("/api/v1/kitchens/nearby", resolveUserLocation, (req, res) => {
+  proxyRequest(req, res, KITCHENS);
 });
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Internal Server Error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
-  });
+app.all("/api/v1/kitchens/*", (req, res) => {
+  proxyRequest(req, res, KITCHENS);
 });
 
 export default app;
