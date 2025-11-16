@@ -8,38 +8,40 @@ export const proxyRequest = async (
   customPath?: string
 ): Promise<void> => {
   try {
-    const pathToUse = customPath ?? req.originalUrl;
-    const finalUrl = targetUrl + pathToUse;
-
-    console.log(`[PROXY] ${req.method} ${req.originalUrl} → ${finalUrl}`);
+    const finalPath = customPath ?? req.originalUrl;
+    const finalUrl = `${targetUrl}${finalPath}`;
 
     const config: AxiosRequestConfig = {
       method: req.method as any,
       url: finalUrl,
       headers: {
         ...req.headers,
-        host: new URL(targetUrl).host,
+        Authorization: req.headers.authorization || "",
       },
       params: req.query,
       data: req.body,
-      timeout: 15000,
-      validateStatus: () => true
+      timeout: 30000,
+      validateStatus: () => true,
     };
 
-    delete config.headers!["content-length"];
+    if (config.headers) {
+      delete (config.headers as any)["host"];
+      delete (config.headers as any)["content-length"];
+      delete (config.headers as any)["transfer-encoding"];
+    }
 
     const response = await axios(config);
 
+    Object.keys(response.headers).forEach((key) => {
+      res.setHeader(key, response.headers[key]);
+    });
+
     res.status(response.status).json(response.data);
-
   } catch (error: any) {
-    console.error("🚨 [PROXY ERROR]", error?.message);
-
     res.status(503).json({
       success: false,
       message: "Service unavailable",
-      error: error.message
+      error: error.message,
     });
   }
 };
-
