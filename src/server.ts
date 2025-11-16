@@ -37,4 +37,3 @@ process.on('uncaughtException', (error) => {
 });
 
 startServer();
-// src/app.ts

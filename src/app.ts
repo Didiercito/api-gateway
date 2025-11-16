@@ -12,6 +12,7 @@ import { resolveUserLocation } from "./middleware/resolve-location.middleware";
 const app: Application = express();
 
 app.use(helmet());
+app.set("trust proxy", 1);
 app.use(cors({ origin: "*", credentials: true }));
 app.use(morgan("dev"));
 app.use(express.json());
@@ -19,48 +20,47 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(rateLimitMiddleware);
 
-// ====================== SERVICES URL ======================
-const AUTH = process.env.AUTH_USER_SERVICE_URL!;
-const STATES = process.env.STATES_SERVICE_URL!;
-const KITCHENS = process.env.KITCHEN_SERVICE_URL!;
-const NOTIFICATIONS = process.env.NOTIFICATIONS_SERVICE_URL!;
+const SERVICE_MAP: Record<string, string> = {
+  "/api/v1/auth": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/password": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/permission": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/role": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/verification": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/users": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/skills": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/availability": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/schedules": process.env.AUTH_USER_SERVICE_URL!,
+  "/api/v1/reputation": process.env.AUTH_USER_SERVICE_URL!,
 
-// ====================== HEALTH ======================
+  "/api/v1/states": process.env.STATES_SERVICE_URL!,
+  "/api/v1/notifications": process.env.NOTIFICATIONS_SERVICE_URL!,
+  "/api/v1/kitchens": process.env.KITCHEN_SERVICE_URL!
+};
+
 app.get("/health", (_req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "API Gateway OK",
-    timestamp: new Date(),
-    services: { AUTH, STATES, KITCHENS, NOTIFICATIONS }
-  });
+  res.json({ success: true, message: "API Gateway OK" });
 });
 
-// ====================== AUTH SERVICE ======================
-app.all("/api/v1/auth/*", (req, res) => {
-  proxyRequest(req, res, AUTH);
-});
-
-app.all("/api/v1/users/*", (req, res) => {
-  proxyRequest(req, res, AUTH);
-});
-
-// ====================== STATES ======================
-app.all("/api/v1/states/*", (req, res) => {
-  proxyRequest(req, res, STATES);
-});
-
-// ====================== NOTIFICATIONS ======================
-app.all("/api/v1/notifications/*", (req, res) => {
-  proxyRequest(req, res, NOTIFICATIONS);
-});
-
-// ====================== KITCHENS ======================
 app.get("/api/v1/kitchens/nearby", resolveUserLocation, (req, res) => {
-  proxyRequest(req, res, KITCHENS);
+  proxyRequest(req, res, SERVICE_MAP["/api/v1/kitchens"]);
 });
 
-app.all("/api/v1/kitchens/*", (req, res) => {
-  proxyRequest(req, res, KITCHENS);
+app.all("/api/v1/*", (req: Request, res: Response) => {
+  const path = req.originalUrl;
+
+  const prefix = Object.keys(SERVICE_MAP).find((p) =>
+    path.startsWith(p)
+  );
+
+  if (!prefix) {
+    return res.status(404).json({
+      success: false,
+      message: "Route not found",
+      path
+    });
+  }
+
+  return proxyRequest(req, res, SERVICE_MAP[prefix]);
 });
 
 export default app;

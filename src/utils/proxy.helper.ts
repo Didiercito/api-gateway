@@ -4,10 +4,12 @@ import { Request, Response } from "express";
 export const proxyRequest = async (
   req: Request,
   res: Response,
-  targetUrl: string
+  targetUrl: string,
+  customPath?: string
 ): Promise<void> => {
   try {
-    const finalUrl = targetUrl + req.originalUrl;
+    const pathToUse = customPath ?? req.originalUrl;
+    const finalUrl = targetUrl + pathToUse;
 
     console.log(`[PROXY] ${req.method} ${req.originalUrl} → ${finalUrl}`);
 
@@ -16,20 +18,20 @@ export const proxyRequest = async (
       url: finalUrl,
       headers: {
         ...req.headers,
-        host: new URL(targetUrl).host
+        host: new URL(targetUrl).host,
       },
       params: req.query,
       data: req.body,
-      timeout: 15000, // más seguro
+      timeout: 15000,
       validateStatus: () => true
     };
 
     delete config.headers!["content-length"];
-    delete config.headers!["content-type"];
 
     const response = await axios(config);
 
     res.status(response.status).json(response.data);
+
   } catch (error: any) {
     console.error("🚨 [PROXY ERROR]", error?.message);
 
@@ -40,3 +42,4 @@ export const proxyRequest = async (
     });
   }
 };
+
