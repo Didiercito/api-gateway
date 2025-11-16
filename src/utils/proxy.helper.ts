@@ -32,6 +32,11 @@ export const proxyRequest = async (
 
     const response = await axios(config);
 
+    if (response.headers) {
+      delete response.headers['content-length'];
+      delete response.headers['transfer-encoding'];
+    }
+
     Object.keys(response.headers).forEach((key) => {
       res.setHeader(key, response.headers[key]);
     });
