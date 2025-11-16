@@ -1,13 +1,12 @@
 import express, { Application, Request, Response } from "express";
-import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
-dotenv.config();
-
 import { proxyRequest } from "./utils/proxy.helper";
 import { rateLimitMiddleware } from "./middleware/rate-limit.middleware";
 import { resolveUserLocation } from "./middleware/resolve-location.middleware";
+
+dotenv.config();
 
 const app: Application = express();
 
@@ -47,9 +46,7 @@ app.get("/api/v1/kitchens/nearby", resolveUserLocation, (req, res) => {
 app.all("/api/v1/*", (req: Request, res: Response) => {
   const path = req.originalUrl;
 
-  const prefix = Object.keys(SERVICE_MAP).find((p) =>
-    path.startsWith(p)
-  );
+  const prefix = Object.keys(SERVICE_MAP).find((p) => path.startsWith(p));
 
   if (!prefix) {
     return res.status(404).json({
