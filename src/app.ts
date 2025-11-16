@@ -11,9 +11,8 @@ import { resolveUserLocation } from "./middleware/resolve-location.middleware";
 
 const app: Application = express();
 
-app.use(helmet());
 app.set("trust proxy", 1);
-app.use(cors({ origin: "*", credentials: true }));
+app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
