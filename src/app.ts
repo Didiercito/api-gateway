@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import cors from "cors";
 import { proxyRequest } from "./utils/proxy.helper";
 import { rateLimitMiddleware } from "./middleware/rate-limit.middleware";
 import { resolveUserLocation } from "./middleware/resolve-location.middleware";
@@ -9,8 +10,7 @@ import { resolveUserLocation } from "./middleware/resolve-location.middleware";
 dotenv.config();
 
 const app: Application = express();
-
-app.set("trust proxy", 1);
+app.use(cors({origin: "*"}));
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
