@@ -56,7 +56,12 @@ app.all("/api/v1/*", (req: Request, res: Response) => {
         });
     }
 
-    const targetPath = path;
+    let targetPath = path;
+
+    if (prefix === '/api/v1/states') {
+        targetPath = path.replace('/v1', ''); 
+    }
+
     return proxyRequest(req, res, SERVICE_MAP[prefix], targetPath);
 });
 
