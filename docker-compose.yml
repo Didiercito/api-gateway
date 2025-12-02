@@ -1,0 +1,15 @@
+services:
+  api-gateway:
+    container_name: api-gateway
+    build: .
+    restart: always
+    ports:
+      - "${PORT}:3000"
+    env_file:
+      - .env
+    networks:
+      - shared-network
+
+networks:
+  shared-network:
+    driver: bridge
