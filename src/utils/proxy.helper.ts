@@ -16,7 +16,6 @@ export const proxyRequest = async (
       url: finalUrl,
       headers: {
         ...req.headers,
-        Authorization: req.headers.authorization || "",
       },
       params: req.query,
       data: req.body,
