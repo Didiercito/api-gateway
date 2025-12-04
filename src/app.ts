@@ -34,7 +34,13 @@ const SERVICE_MAP: Record<string, string> = {
 
   "/api/v1/states": process.env.STATES_SERVICE_URL!,
   "/api/v1/notifications": process.env.NOTIFICATIONS_SERVICE_URL!,
-  "/api/v1/kitchens": process.env.KITCHEN_SERVICE_URL!
+  "/api/v1/kitchens": process.env.KITCHEN_SERVICE_URL!,
+
+  "/api/v1/payments": process.env.PAYMENTS_SERVICE_URL!,
+
+  "/api/v1/events": process.env.EVENTS_SERVICE_URL!,
+  "/api/v1/event-registrations": process.env.EVENTS_SERVICE_URL!,
+  "/api/v1/event-subscriptions": process.env.EVENTS_SERVICE_URL!
 };
 
 app.get("/health", (_req, res) => {
