@@ -14,8 +14,6 @@ dotenv.config();
 
 const app: Application = express();
 
-app.set("trust proxy", true);
-
 app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(morgan("dev"));

@@ -9,11 +9,7 @@ export const proxyRequest = async (
 ): Promise<void> => {
   try {
     const finalPath = customPath ?? req.originalUrl;
-    const normalizedPath = finalPath.startsWith("/")
-      ? finalPath
-      : `/${finalPath}`;
-
-    const finalUrl = `${targetUrl}${normalizedPath}`;
+    const finalUrl = `${targetUrl}${finalPath}`;
 
     const config: AxiosRequestConfig = {
       method: req.method as any,
@@ -36,18 +32,16 @@ export const proxyRequest = async (
     const response = await axios(config);
 
     if (response.headers) {
-      delete response.headers["content-length"];
-      delete response.headers["transfer-encoding"];
+      delete response.headers['content-length'];
+      delete response.headers['transfer-encoding'];
     }
 
-    Object.entries(response.headers || {}).forEach(([key, value]) => {
-      if (value !== undefined) res.setHeader(key, value);
+    Object.keys(response.headers).forEach((key) => {
+      res.setHeader(key, response.headers[key]);
     });
 
     res.status(response.status).json(response.data);
   } catch (error: any) {
-    console.error("Proxy error:", error.message);
-
     res.status(503).json({
       success: false,
       message: "Service unavailable",
