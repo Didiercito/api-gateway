@@ -14,6 +14,8 @@ dotenv.config();
 
 const app: Application = express();
 
+app.set("trust proxy", true);
+
 app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(morgan("dev"));
@@ -21,27 +23,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(rateLimitMiddleware);
-
-const SERVICE_MAP: Record<string, string> = {
-  "/api/v1/auth": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/password": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/permission": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/role": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/verification": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/users": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/skills": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/availability": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/schedules": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/reputation": process.env.AUTH_USER_SERVICE_URL!,
-  "/api/v1/states": process.env.STATES_SERVICE_URL!,
-  "/api/v1/notifications": process.env.NOTIFICATIONS_SERVICE_URL!,
-  "/api/v1/kitchens": process.env.KITCHEN_SERVICE_URL!,
-  "/api/v1/payments": process.env.PAYMENTS_SERVICE_URL!,
-  "/api/v1/events": process.env.EVENTS_SERVICE_URL!,
-  "/api/v1/event-registrations": process.env.EVENTS_SERVICE_URL!,
-  "/api/v1/event-subscriptions": process.env.EVENTS_SERVICE_URL!,
-  "/api/v1/chef": process.env.CHEF_SERVICE_URL!
-};
 
 app.get("/api/v1/inventory", (req, res) =>
   proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
@@ -61,23 +42,11 @@ app.get("/api/v1/inventory/units", (req, res) =>
 );
 
 app.all(
-  "/api/v1/inventory/categories/*",
-  authenticate,
-  requireRole(["Admin_cocina"]),
-  (req, res) =>
-    proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
-);
-
-app.all(
   "/api/v1/inventory/*",
   authenticate,
   requireRole(["Admin_cocina"]),
   (req, res) =>
     proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
-);
-
-app.get("/api/v1/chef", (req, res) =>
-  proxyRequest(req, res, process.env.CHEF_SERVICE_URL!)
 );
 
 app.all(
@@ -86,21 +55,15 @@ app.all(
   requireRole(["Admin_cocina", "Voluntario"]),
   (req, res) => {
     const targetPath = req.originalUrl.replace("/api/v1/chef", "");
-    proxyRequest(
-      req,
-      res,
-      process.env.CHEF_SERVICE_URL!,
-      targetPath
-    );
+    proxyRequest(req, res, process.env.CHEF_SERVICE_URL!, targetPath);
   }
 );
-
 
 app.get(
   "/api/v1/kitchens/nearby",
   resolveUserLocation,
   (req, res) =>
-    proxyRequest(req, res, SERVICE_MAP["/api/v1/kitchens"])
+    proxyRequest(req, res, process.env.KITCHEN_SERVICE_URL!)
 );
 
 app.post(
@@ -108,7 +71,7 @@ app.post(
   authenticate,
   requireRole(["Admin_cocina"]),
   (req, res) =>
-    proxyRequest(req, res, SERVICE_MAP["/api/v1/kitchens"])
+    proxyRequest(req, res, process.env.KITCHEN_SERVICE_URL!)
 );
 
 app.put(
@@ -116,7 +79,7 @@ app.put(
   authenticate,
   requireRole(["Admin_cocina"]),
   (req, res) =>
-    proxyRequest(req, res, SERVICE_MAP["/api/v1/kitchens"])
+    proxyRequest(req, res, process.env.KITCHEN_SERVICE_URL!)
 );
 
 app.get(
@@ -124,7 +87,7 @@ app.get(
   authenticate,
   requireRole(["Admin_cocina"]),
   (req, res) =>
-    proxyRequest(req, res, SERVICE_MAP["/api/v1/kitchens"])
+    proxyRequest(req, res, process.env.KITCHEN_SERVICE_URL!)
 );
 
 app.get("/health", (_req, res) => {
@@ -132,29 +95,6 @@ app.get("/health", (_req, res) => {
     success: true,
     message: "API Gateway OK"
   });
-});
-
-app.all("/api/v1/*", (req, res) => {
-  const path = req.originalUrl;
-  const prefix = Object.keys(SERVICE_MAP).find(p =>
-    path.startsWith(p)
-  );
-
-  if (!prefix) {
-    return res.status(404).json({
-      success: false,
-      message: "Route not found",
-      path
-    });
-  }
-
-  let targetPath = path;
-
-  if (prefix === "/api/v1/states") {
-    targetPath = path.replace("/v1", "");
-  }
-
-  return proxyRequest(req, res, SERVICE_MAP[prefix], targetPath);
 });
 
 export default app;
