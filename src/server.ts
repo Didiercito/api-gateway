@@ -3,7 +3,7 @@ const PORT = process.env.PORT || 3000;
 
 const startServer = () => {
   try {
-    console.log('🚀 Starting API Gateway...');
+    console.log('Starting API Gateway');
 
     app.listen(PORT, () => {
       console.log('🚀═══════════════════════════════════════════════🚀');
@@ -19,7 +19,7 @@ const startServer = () => {
 
 const gracefulShutdown = (signal: string) => {
   console.log(`\n${signal} received. Closing server gracefully...`);
-  console.log('✅ Server closed gracefully');
+  console.log('Server closed gracefully');
   process.exit(0);
 };
 
@@ -27,12 +27,12 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('Unhandled Rejection');
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
+  console.error('Uncaught Exception:', error);
   gracefulShutdown('Uncaught Exception');
 });
 
