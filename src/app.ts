@@ -33,7 +33,6 @@ const SERVICE_MAP: Record<string, string> = {
   "/api/v1/availability": process.env.AUTH_USER_SERVICE_URL!,
   "/api/v1/schedules": process.env.AUTH_USER_SERVICE_URL!,
   "/api/v1/reputation": process.env.AUTH_USER_SERVICE_URL!,
-
   "/api/v1/states": process.env.STATES_SERVICE_URL!,
   "/api/v1/notifications": process.env.NOTIFICATIONS_SERVICE_URL!,
   "/api/v1/kitchens": process.env.KITCHEN_SERVICE_URL!,
@@ -41,7 +40,6 @@ const SERVICE_MAP: Record<string, string> = {
   "/api/v1/events": process.env.EVENTS_SERVICE_URL!,
   "/api/v1/event-registrations": process.env.EVENTS_SERVICE_URL!,
   "/api/v1/event-subscriptions": process.env.EVENTS_SERVICE_URL!,
-
   "/api/v1/chef": process.env.CHEF_SERVICE_URL!
 };
 
@@ -54,7 +52,12 @@ app.get("/api/v1/inventory/categories", (req, res) =>
 );
 
 app.get("/api/v1/inventory/units", (req, res) =>
-  proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
+  proxyRequest(
+    req,
+    res,
+    process.env.INVENTARY_SERVICE_URL!,
+    "/api/v1/inventory/units"
+  )
 );
 
 app.all(
