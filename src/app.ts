@@ -84,9 +84,17 @@ app.all(
   "/api/v1/chef/*",
   authenticate,
   requireRole(["Admin_cocina", "Voluntario"]),
-  (req, res) =>
-    proxyRequest(req, res, process.env.CHEF_SERVICE_URL!)
+  (req, res) => {
+    const targetPath = req.originalUrl.replace("/api/v1/chef", "");
+    proxyRequest(
+      req,
+      res,
+      process.env.CHEF_SERVICE_URL!,
+      targetPath
+    );
+  }
 );
+
 
 app.get(
   "/api/v1/kitchens/nearby",
