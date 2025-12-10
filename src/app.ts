@@ -13,6 +13,7 @@ import { requireRole } from "./middleware/role.middleware";
 dotenv.config();
 
 const app: Application = express();
+
 app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(morgan("dev"));
@@ -32,6 +33,7 @@ const SERVICE_MAP: Record<string, string> = {
   "/api/v1/availability": process.env.AUTH_USER_SERVICE_URL!,
   "/api/v1/schedules": process.env.AUTH_USER_SERVICE_URL!,
   "/api/v1/reputation": process.env.AUTH_USER_SERVICE_URL!,
+
   "/api/v1/states": process.env.STATES_SERVICE_URL!,
   "/api/v1/notifications": process.env.NOTIFICATIONS_SERVICE_URL!,
   "/api/v1/kitchens": process.env.KITCHEN_SERVICE_URL!,
@@ -39,6 +41,7 @@ const SERVICE_MAP: Record<string, string> = {
   "/api/v1/events": process.env.EVENTS_SERVICE_URL!,
   "/api/v1/event-registrations": process.env.EVENTS_SERVICE_URL!,
   "/api/v1/event-subscriptions": process.env.EVENTS_SERVICE_URL!,
+
   "/api/v1/chef": process.env.CHEF_SERVICE_URL!
 };
 
@@ -46,10 +49,12 @@ app.get("/api/v1/inventory", (req, res) =>
   proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
 );
 
-app.get(
-  "/api/v1/inventory/categories",
-  (req, res) =>
-    proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
+app.get("/api/v1/inventory/categories", (req, res) =>
+  proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
+);
+
+app.get("/api/v1/inventory/units", (req, res) =>
+  proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
 );
 
 app.all(
@@ -66,6 +71,10 @@ app.all(
   requireRole(["Admin_cocina"]),
   (req, res) =>
     proxyRequest(req, res, process.env.INVENTARY_SERVICE_URL!)
+);
+
+app.get("/api/v1/chef", (req, res) =>
+  proxyRequest(req, res, process.env.CHEF_SERVICE_URL!)
 );
 
 app.all(
@@ -116,7 +125,6 @@ app.get("/health", (_req, res) => {
 
 app.all("/api/v1/*", (req, res) => {
   const path = req.originalUrl;
-
   const prefix = Object.keys(SERVICE_MAP).find(p =>
     path.startsWith(p)
   );
