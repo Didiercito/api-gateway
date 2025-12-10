@@ -73,9 +73,8 @@ app.all(
   "/api/v1/chef/*",
   authenticate,
   requireRole(["Admin_cocina"]),
-  (req, res) => {
-    proxyRequest(req, res, process.env.CHEF_SERVICE_URL!);
-  }
+  (req, res) =>
+    proxyRequest(req, res, process.env.CHEF_SERVICE_URL!)
 );
 
 app.get(
@@ -109,37 +108,36 @@ app.get(
     proxyRequest(req, res, process.env.KITCHEN_SERVICE_URL!)
 );
 
-app.all(
-  "/api/v1/*",
-  authenticate,
-  (req, res) => {
-    const path = req.originalUrl;
-    const prefix = Object.keys(SERVICE_MAP).find(p =>
-      path.startsWith(p)
-    );
-
-    if (!prefix) {
-      return res.status(404).json({
-        success: false,
-        message: "Route not found",
-        path
-      });
-    }
-
-    let targetPath = path.replace(prefix, "");
-    if (!targetPath.startsWith("/")) {
-      targetPath = `/${targetPath}`;
-    }
-
-    proxyRequest(req, res, SERVICE_MAP[prefix], targetPath);
-  }
-);
 
 app.get("/health", (_req, res) => {
   res.json({
     success: true,
     message: "API Gateway OK"
   });
+});
+
+app.all("/api/v1/*", (req, res) => {
+  const path = req.originalUrl;
+
+  const prefix = Object.keys(SERVICE_MAP).find(p =>
+    path.startsWith(p)
+  );
+
+  if (!prefix) {
+    return res.status(404).json({
+      success: false,
+      message: "Route not found",
+      path
+    });
+  }
+
+  let targetPath = path;
+
+  if (prefix === "/api/v1/states") {
+    targetPath = path.replace("/v1", "");
+  }
+
+  proxyRequest(req, res, SERVICE_MAP[prefix], targetPath);
 });
 
 export default app;
